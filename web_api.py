@@ -8,6 +8,7 @@
 # 创建一个接受提交参数的Flask应用程序。
 # 将scraper.py返回的内容以JSON格式返回。
 # 默认运行端口2333, 请自行在config.ini中修改。
+import asyncio
 import configparser
 import json
 import os
@@ -580,5 +581,19 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
     return RedirectResponse(download_url)
 
 
+@app.on_event("startup")
+async def startup_event():
+    # 定期清理./download文件夹
+    # Periodically clean the ./download folder
+    while True:
+        await asyncio.sleep(15)
+        print("Cleaning up the download folder...")
+        for file in os.listdir("./download"):
+            file_path = os.path.join("./download", file)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(e)
 if __name__ == '__main__':
     uvicorn.run("web_api:app", port=port, reload=True, access_log=False)
