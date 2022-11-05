@@ -535,7 +535,7 @@ async def download_douyin_video(aweme_id: str, prefix: bool = True):
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
     """
     video_url = f"https://www.douyin.com/video/{aweme_id}"
-    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
 
 
@@ -555,7 +555,7 @@ async def download_douyin_discover(modal_id: str, prefix: bool = True):
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
     """
     video_url = f"https://www.douyin.com/discover?modal_id={modal_id}"
-    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
 
 
@@ -576,7 +576,7 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
         - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
         """
     video_url = f"https://www.tiktok.com/{user_id}/video/{aweme_id}"
-    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
 
 
