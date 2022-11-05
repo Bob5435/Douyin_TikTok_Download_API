@@ -457,6 +457,10 @@ async def download_file_hybrid(url: str, prefix: bool = True):
         - url:str -> [Douyin|TikTok] [视频|图片] 链接/ [Douyin|TikTok] [video|image] link
         - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
         """
+    # 是否开启此端点/Whether to enable this endpoint
+    if config["Web_API"]["Download_Switch"] != "True":
+        return ORJSONResponse({"status": "endpoint closed",
+                               "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -537,6 +541,10 @@ async def download_douyin_video(aweme_id: str, prefix: bool = True):
     - aweme_id:str -> 抖音视频ID/Douyin video ID
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
     """
+    # 是否开启此端点/Whether to enable this endpoint
+    if config["Web_API"]["Download_Switch"] != "True":
+        return ORJSONResponse({"status": "endpoint closed",
+                               "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.douyin.com/video/{aweme_id}"
     download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
@@ -557,6 +565,10 @@ async def download_douyin_discover(modal_id: str, prefix: bool = True):
     - modal_id: str -> 抖音视频ID/Douyin video ID
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
     """
+    # 是否开启此端点/Whether to enable this endpoint
+    if config["Web_API"]["Download_Switch"] != "True":
+        return ORJSONResponse({"status": "endpoint closed",
+                               "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.douyin.com/discover?modal_id={modal_id}"
     download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
@@ -578,6 +590,10 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
         - aweme_id: str -> TikTok视频ID/TikTok video ID
         - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
         """
+    # 是否开启此端点/Whether to enable this endpoint
+    if config["Web_API"]["Download_Switch"] != "True":
+        return ORJSONResponse({"status": "endpoint closed",
+                               "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.tiktok.com/{user_id}/video/{aweme_id}"
     download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
     return RedirectResponse(download_url)
@@ -614,7 +630,7 @@ def cleanup_path():
 async def startup_event():
     # 创建一个清理下载目录定时器线程并启动
     # Create a timer thread to clean up the download directory and start it
-    download_path_clean_switches = True if config["Web_API"]["Download_Path_Clean_Switches"] == "True" else False
+    download_path_clean_switches = True if config["Web_API"]["Download_Path_Clean_Switch"] == "True" else False
     if download_path_clean_switches:
         # 启动清理线程/Start cleaning thread
         thread_1 = threading.Thread(target=cleanup_path)
