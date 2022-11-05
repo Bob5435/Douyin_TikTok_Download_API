@@ -2,21 +2,25 @@
 # -*- encoding: utf-8 -*-
 # @Author: https://github.com/Evil0ctal/
 # @Time: 2021/11/06
-# @Update: 2022/11/04
+# @Update: 2022/11/05
 # @Version: 3.0.0
 # @Function:
 # 创建一个接受提交参数的Flask应用程序。
 # 将scraper.py返回的内容以JSON格式返回。
 # 默认运行端口2333, 请自行在config.ini中修改。
-
-import time
-import json
-import uvicorn
 import configparser
+import json
+import os
+import time
+import zipfile
 
+import requests
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, FileResponse
 from pydantic import BaseModel
+from starlette.responses import RedirectResponse
+
 from scraper import Scraper
 
 # 读取配置文件
@@ -437,11 +441,144 @@ async def Get_Shortcut():
 """ ________________________⬇️下载文件端点(Download file endpoint)⬇________________________"""
 
 
+# 下载文件端点/Download file endpoint
 @app.get("/download", tags=["Download"])
-async def download_file(url: str = None):
-    # file_path = "https://v3-dy-o.zjcdn.com/f78ba3f14461ca85d70917682e7e3adc/6365cb5c/video/tos/cn/tos-cn-ve-15/695a4fb1d06943d1a79b8d31c5c2c097/?a=1128&ch=0&cr=0&dr=0&lr=aweme_search_suffix&cd=0%7C0%7C1%7C0&cv=1&br=2060&bt=2060&cs=0&ds=3&ft=f84k7SY0-C1FQvjVQQMYW07us3dVqSnaglvAV&mime_type=video_mp4&qs=0&rc=M2YzOzU5OTc7NGk4NzZkNkBpM3hleDRsODlkMzMzaGkzM0AuNGMuYy1eXi8xYTVgMzQ2YSMuLjJucGtuNi5gLS1jLTBzcw%3D%3D&l=202211050932500102121971454F33841F&btag=80000&cc=1f"
-    file_path = 'test.mp4'
-    return FileResponse(path=file_path, media_type='mp4', filename="test.mp4")
+async def download_file_hybrid(url: str, prefix: bool = True):
+    """
+        ## 用途/Usage
+        ### [中文]
+        - 将[抖音|TikTok]链接作为参数提交至此端点，返回[视频|图片]文件下载请求。
+        ### [English]
+        - Submit the [Douyin|TikTok] link as a parameter to this endpoint and return the [video|picture] file download request.
+        # 参数/Parameter
+        - url:str -> [Douyin|TikTok] [视频|图片] 链接/ [Douyin|TikTok] [video|image] link
+        - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+        """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    data = api.hybrid_parsing(url)
+    if data is None:
+        return ORJSONResponse(data)
+    else:
+        url_type = data.get('type')
+        platform = data.get('platform')
+        aweme_id = data.get('aweme_id')
+        file_name_prefix = config["Web_API"]["File_Name_Prefix"] if prefix else ''
+        root_path = config["Web_API"]["Download_Path"]
+        # 查看目录是否存在，不存在就创建
+        if not os.path.exists(root_path):
+            os.makedirs(root_path)
+        if url_type == 'video':
+            file_name = file_name_prefix + platform + '_' + aweme_id + '.mp4'
+            url = data.get('video_data').get('nwm_video_url_HQ')
+            print('url: ', url)
+            file_path = root_path + "/" + file_name
+            print('file_path: ', file_path)
+            # 判断文件是否存在，存在就直接返回、
+            if os.path.exists(file_path):
+                print('文件已存在，直接返回')
+                return FileResponse(path=file_path, media_type='video/mp4', filename=file_name)
+            else:
+                if platform == 'douyin':
+                    r = requests.get(url=url, headers=headers, allow_redirects=False).headers
+                    cdn_url = r.get('location')
+                    r = requests.get(cdn_url).content
+                elif platform == 'tiktok':
+                    r = requests.get(url=url, headers=headers).content
+                with open(file_path, 'wb') as f:
+                    f.write(r)
+                return FileResponse(path=file_path, media_type='video/mp4', filename=file_name)
+        elif url_type == 'image':
+            url = data.get('image_data').get('no_watermark_image_list')
+            print('url: ', url)
+            zip_file_name = file_name_prefix + platform + '_' + aweme_id + '_images.zip'
+            zip_file_path = root_path + "/" + file_name_prefix + platform + '_' + aweme_id + '_images.zip'
+            print('zip_file_name: ', zip_file_name)
+            # 判断文件是否存在，存在就直接返回、
+            if os.path.exists(zip_file_name):
+                print('文件已存在，直接返回')
+                return FileResponse(path=zip_file_path, media_type='zip', filename=zip_file_name)
+            file_path_list = []
+            for i in url:
+                index = int(url.index(i))
+                file_name = file_name_prefix + platform + '_' + aweme_id + '_' + str(index + 1) + '.jpg'
+                file_path = root_path + "/" + file_name
+                file_path_list.append(file_path)
+                r = requests.get(url=i, headers=headers).content
+                print('file_path: ', file_path)
+                with open(file_path, 'wb') as f:
+                    f.write(r)
+                if len(url) == len(file_path_list):
+                    zip_file = zipfile.ZipFile(zip_file_name, 'w')
+                    for f in file_path_list:
+                        zip_file.write(os.path.join(f), f, zipfile.ZIP_DEFLATED)
+                    zip_file.close()
+                    return FileResponse(path=zip_file_path, media_type='zip', filename=zip_file_name)
+        else:
+            return ORJSONResponse(data)
+
+
+# 抖音链接格式下载端点(video)/Douyin link format download endpoint(video)
+@app.get("/video/{aweme_id}", tags=["Download"])
+async def download_douyin_video(aweme_id: str, prefix: bool = True):
+    """
+    ## 用途/Usage
+    ### [中文]
+    - 将抖音域名改为当前服务器域名即可调用此端点，返回[视频|图片]文件下载请求。
+    - 例如原链接：https://douyin.com/video/1234567890123456789 改成 https://api.douyin.wtf/video/1234567890123456789 即可调用此端点。
+    ### [English]
+    - Change the Douyin domain name to the current server domain name to call this endpoint and return the video file download request.
+    - For example, the original link: https://douyin.com/video/1234567890123456789 becomes https://api.douyin.wtf/video/1234567890123456789 to call this endpoint.
+    # 参数/Parameter
+    - aweme_id:str -> 抖音视频ID/Douyin video ID
+    - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    """
+    video_url = f"https://www.douyin.com/video/{aweme_id}"
+    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    return RedirectResponse(download_url)
+
+
+# 抖音链接格式下载端点/Douyin link format download endpoint
+@app.get("/discover", tags=["Download"])
+async def download_douyin_discover(modal_id: str, prefix: bool = True):
+    """
+    ## 用途/Usage
+    ### [中文]
+    - 将抖音域名改为当前服务器域名即可调用此端点，返回[视频|图片]文件下载请求。
+    - 例如原链接：https://www.douyin.com/discover?modal_id=1234567890123456789 改成 https://api.douyin.wtf/discover?modal_id=1234567890123456789 即可调用此端点。
+    ### [English]
+    - Change the Douyin domain name to the current server domain name to call this endpoint and return the video file download request.
+    - For example, the original link: https://douyin.com/discover?modal_id=1234567890123456789 becomes https://api.douyin.wtf/discover?modal_id=1234567890123456789 to call this endpoint.
+    # 参数/Parameter
+    - modal_id: str -> 抖音视频ID/Douyin video ID
+    - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    """
+    video_url = f"https://www.douyin.com/discover?modal_id={modal_id}"
+    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    return RedirectResponse(download_url)
+
+
+# Tiktok链接格式下载端点(video)/Tiktok link format download endpoint(video)
+@app.get("/{user_id}/video/{aweme_id}", tags=["Download"])
+async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True):
+    """
+        ## 用途/Usage
+        ### [中文]
+        - 将TikTok域名改为当前服务器域名即可调用此端点，返回[视频|图片]文件下载请求。
+        - 例如原链接：https://www.tiktok.com/@evil0ctal/video/7156033831819037994 改成 https://api.douyin.wtf/@evil0ctal/video/7156033831819037994 即可调用此端点。
+        ### [English]
+        - Change the TikTok domain name to the current server domain name to call this endpoint and return the video file download request.
+        - For example, the original link: https://www.tiktok.com/@evil0ctal/video/7156033831819037994 becomes https://api.douyin.wtf/@evil0ctal/video/7156033831819037994 to call this endpoint.
+        # 参数/Parameter
+        - user_id: str -> TikTok用户ID/TikTok user ID
+        - aweme_id: str -> TikTok视频ID/TikTok video ID
+        - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+        """
+    video_url = f"https://www.tiktok.com/{user_id}/video/{aweme_id}"
+    download_url = f"{config['Web_API']['Domain']}/download?url={video_url}&prefix={prefix}"
+    return RedirectResponse(download_url)
+
 
 if __name__ == '__main__':
     uvicorn.run("web_api:app", port=port, reload=True, access_log=False)
