@@ -11,22 +11,43 @@
 
 
 import re
-import json
 import orjson
-import traceback
-
 import requests
+import traceback
 import configparser
 from tenacity import *
 
 
 class Scraper:
     """
-    Scraper.douyin(link):
-    输入参数为抖音视频/图集链接，完成解析后返回字典。
+    简介/Introduction
 
-    Scraper.tiktok(link):
-    输入参数为TikTok视频/图集链接，完成解析后返回字典。
+    Scraper.get_url(text: str) -> str or None
+    用于检索出文本中的链接并返回/Used to retrieve the link in the text and return it.
+
+    Scraper.convert_share_urls(self, url: str) -> str or None\n
+    用于转换分享链接为原始链接/Convert share links to original links
+
+    Scraper.get_douyin_video_id(self, original_url: str) -> str or None\n
+    用于获取抖音视频ID/Get Douyin video ID
+
+    Scraper.get_douyin_video_data(self, video_id: str) -> dict or None\n
+    用于获取抖音视频数据/Get Douyin video data
+
+    Scraper.get_douyin_live_video_data(self, original_url: str) -> str or None\n
+    用于获取抖音直播视频数据/Get Douyin live video data
+
+    Scraper.get_tiktok_video_id(self, original_url: str) -> str or None\n
+    用于获取TikTok视频ID/Get TikTok video ID
+
+    Scraper.get_tiktok_video_data(self, video_id: str) -> dict or None\n
+    用于获取TikTok视频数据/Get TikTok video data
+
+    Scraper.hybrid_parsing(self, video_url: str) -> dict\n
+    用于混合解析/ Hybrid parsing
+
+    Scraper.hybrid_parsing_minimal(data: dict) -> dict\n
+    用于混合解析最小化/Hybrid parsing minimal
     """
 
     """__________________________________________⬇️initialization(初始化)⬇️______________________________________"""
@@ -34,7 +55,7 @@ class Scraper:
     # 初始化/initialization
     def __init__(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Mobile Safari/537.36 Edg/87.0.664.66'
+            'User-Agent': "Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Mobile Safari/537.36 Edg/87.0.664.66"
         }
         self.douyin_cookies = {
             'Cookie': 'msToken=tsQyL2_m4XgtIij2GZfyu8XNXBfTGELdreF1jeIJTyktxMqf5MMIna8m1bv7zYz4pGLinNP2TvISbrzvFubLR8khwmAVLfImoWo3Ecnl_956MgOK9kOBdwM=; odin_tt=6db0a7d68fd2147ddaf4db0b911551e472d698d7b84a64a24cf07c49bdc5594b2fb7a42fd125332977218dd517a36ec3c658f84cebc6f806032eff34b36909607d5452f0f9d898810c369cd75fd5fb15; ttwid=1%7CfhiqLOzu_UksmD8_muF_TNvFyV909d0cw8CSRsmnbr0%7C1662368529%7C048a4e969ec3570e84a5faa3518aa7e16332cfc7fbcb789780135d33a34d94d2'
@@ -70,6 +91,19 @@ class Scraper:
 
     """__________________________________________⬇️utils(实用程序)⬇️______________________________________"""
 
+    # 检索字符串中的链接
+    @staticmethod
+    def get_url(text: str) -> str or None:
+        try:
+            # 从输入文字中提取索引链接存入列表/Extract index links from input text and store in list
+            url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
+            # 判断是否有链接/Check if there is a link
+            if len(url) > 0:
+                return url[0]
+        except Exception as e:
+            print(e)
+            return None
+
     # 转换链接/convert url
     @retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=2))
     def convert_share_urls(self, url: str) -> str or None:
@@ -77,8 +111,12 @@ class Scraper:
         用于从短链接中获取长链接
         :return: 长链接
         """
-        # 从输入文字中提取链接/extract url from input text
-        url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', url)[0]
+        # 检索字符串中的链接/Retrieve links from string
+        url = self.get_url(url)
+        # 判断是否有链接/Check if there is a link
+        if url is None:
+            print('无法检索到链接/Unable to retrieve link')
+            return None
         # 判断是否为抖音分享链接/judge if it is a douyin share link
         if 'douyin' in url:
             """
@@ -184,7 +222,6 @@ class Scraper:
     @retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=2))
     def get_douyin_video_data(self, video_id: str) -> dict or None:
         """
-        :param url_type: 'video' or 'live'
         :param video_id: str - 抖音视频id
         :return:dict - 包含信息的字典
         """
@@ -273,7 +310,6 @@ class Scraper:
     """__________________________________________⬇️Hybrid methods(混合方法)⬇️______________________________________"""
 
     # 自定义获取数据/Custom data acquisition
-    @retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=2))
     def hybrid_parsing(self, video_url: str) -> dict:
         # URL平台判断/Judge URL platform
         url_platform = 'douyin' if 'douyin' in video_url else 'tiktok'
@@ -335,10 +371,10 @@ class Scraper:
                         'cover': data['video']['cover'],
                         'origin_cover': data['video']['origin_cover'],
                         'dynamic_cover': data['video']['dynamic_cover'] if url_type == 'video' else None
-                    },
+                        },
                     'hashtags': data['text_extra']
                 }
-                # 创建空字典，稍后使用.update()方法更新数据/Create an empty dictionary and use the .update() method to update data later
+                # 创建一个空变量，稍后使用.update()方法更新数据/Create an empty variable and use the .update() method to update the data
                 api_data = None
                 # 判断链接类型并处理数据/Judge link type and process data
                 try:
@@ -403,12 +439,10 @@ class Scraper:
                             no_watermark_image_list = []
                             # 有水印图片列表/With watermark image list
                             watermark_image_list = []
-                            # 遍历图片列表/Traverse image list
-                            album_list = []
                             for i in data['image_post_info']['images']:
                                 no_watermark_image_list.append(i['display_image']['url_list'][0])
                                 watermark_image_list.append(i['owner_watermark_image']['url_list'][0])
-                            image_data = {
+                            api_data = {
                                 'image_data':
                                     {
                                         'no_watermark_image_list': no_watermark_image_list,
@@ -424,13 +458,17 @@ class Scraper:
                     traceback.print_exc()
                     print("数据处理失败！")
                     return {'status': 'failed', 'message': '数据处理失败！/Data processing failed!'}
+            else:
+                print("[抖音|TikTok方法]返回数据为空，无法处理！")
+                return {'status': 'failed',
+                        'message': '返回数据为空，无法处理！/Return data is empty and cannot be processed!'}
         else:
             print('获取视频ID失败！')
             return {'status': 'failed', 'message': '获取视频ID失败！/Failed to get video ID!'}
 
     # 处理数据方便快捷指令使用/Process data for easy-to-use shortcuts
-    def hybrid_parsing_minimal(self, video_url: str) -> dict:
-        data = self.hybrid_parsing(video_url)
+    @staticmethod
+    def hybrid_parsing_minimal(data: dict) -> dict:
         # 如果数据获取成功/If the data is successfully obtained
         if data['status'] == 'success':
             result = {
@@ -443,7 +481,8 @@ class Scraper:
                 'wm_video_url_HQ': data['video_data']['wm_video_url_HQ'] if data['type'] == 'video' else None,
                 'nwm_video_url': data['video_data']['nwm_video_url'] if data['type'] == 'video' else None,
                 'nwm_video_url_HQ': data['video_data']['nwm_video_url_HQ'] if data['type'] == 'video' else None,
-                'no_watermark_image_list': data['image_data']['no_watermark_image_list'] if data['type'] == 'image' else None,
+                'no_watermark_image_list': data['image_data']['no_watermark_image_list'] if data[
+                                                                                                'type'] == 'image' else None,
                 'watermark_image_list': data['image_data']['watermark_image_list'] if data['type'] == 'image' else None
             }
             return result
@@ -456,7 +495,6 @@ class Scraper:
 
 # 测试/Test
 def main_test():
-    api = Scraper()
     while True:
         url = input("Enter your Douyin/TikTok url here to test: ")
         if 'douyin.com' in url:
@@ -472,12 +510,15 @@ def main_test():
 
 
 def hybrid_test():
-    api = Scraper()
     while True:
         url = input("Enter your Douyin/TikTok url here to test: ")
-        api.hybrid_parsing(url)
+        # 混合解析/Hybrid parsing
+        data = api.hybrid_parsing(url)
+        # 精简数据/Minimal data
+        minimal_data = api.hybrid_parsing_minimal(data)
 
 
 if __name__ == '__main__':
+    api = Scraper()
     # 测试类
     hybrid_test()
