@@ -8,10 +8,12 @@
 # 创建一个接受提交参数的Flask应用程序。
 # 将scraper.py返回的内容以JSON格式返回。
 # 默认运行端口2333, 请自行在config.ini中修改。
-import asyncio
+
+
 import configparser
 import json
 import os
+import threading
 import time
 import zipfile
 
@@ -439,7 +441,7 @@ async def Get_Shortcut():
     return ORJSONResponse(data)
 
 
-""" ________________________⬇️下载文件端点(Download file endpoint)⬇️________________________"""
+""" ________________________⬇️下载文件端点/函数(Download file endpoints/functions)⬇️________________________"""
 
 
 # 下载文件端点/Download file endpoint
@@ -581,19 +583,43 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
     return RedirectResponse(download_url)
 
 
+# 定期清理[Download_Path]文件夹
+# Periodically clean the [Download_Path] folder
+def cleanup_path():
+    while True:
+        root_path = config["Web_API"]["Download_Path"]
+        timer = int(config["Web_API"]["Download_Path_Clean_Timer"])
+        # 查看目录是否存在，不存在就跳过
+        if os.path.exists(root_path):
+            time_now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            print(f"{time_now}: Cleaning up the download folder...")
+            for file in os.listdir("./download"):
+                file_path = os.path.join("./download", file)
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    print(e)
+        else:
+            time_now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            print(f"{time_now}: The download folder does not exist, skipping...")
+        time.sleep(timer)
+
+
+""" ________________________⬇️项目启动执行函数(Project start execution function)⬇️________________________"""
+
+
+# 程序启动后执行/Execute after program startup
 @app.on_event("startup")
 async def startup_event():
-    # 定期清理./download文件夹
-    # Periodically clean the ./download folder
-    while True:
-        await asyncio.sleep(15)
-        print("Cleaning up the download folder...")
-        for file in os.listdir("./download"):
-            file_path = os.path.join("./download", file)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                print(e)
+    # 创建一个清理下载目录定时器线程并启动
+    # Create a timer thread to clean up the download directory and start it
+    download_path_clean_switches = True if config["Web_API"]["Download_Path_Clean_Switches"] == "True" else False
+    if download_path_clean_switches:
+        # 启动清理线程/Start cleaning thread
+        thread_1 = threading.Thread(target=cleanup_path)
+        thread_1.start()
+
+
 if __name__ == '__main__':
     uvicorn.run("web_api:app", port=port, reload=True, access_log=False)
