@@ -11,13 +11,11 @@
 
 import time
 import json
-
-import orjson
 import uvicorn
 import configparser
 
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, FileResponse
 from pydantic import BaseModel
 from scraper import Scraper
 
@@ -212,7 +210,7 @@ async def root():
 # 混合解析端点,自动判断输入链接返回精简后的数据
 # Hybrid parsing endpoint, automatically determine the input link and return the simplified data.
 @app.get("/api", tags=["API"], response_model=API_Hybrid_Response)
-async def hybrid_parsing(url: str):
+async def hybrid_parsing(url: str, minimal: bool = False):
     """
         ## 用途/Usage
         - 获取[抖音|TikTok]单个视频数据，参数是视频链接或分享口令。
@@ -226,6 +224,12 @@ async def hybrid_parsing(url: str):
         `https://v.douyin.com/MkmSwy7/`
         `https://vm.tiktok.com/TTPdkQvKjP/`
         `https://www.tiktok.com/@tvamii/video/7045537727743380782`
+        #### minimal(选填/Optional Default:False):
+        - 是否返回精简版数据。
+        - Whether to return simplified data.
+        - 例子/Example:
+        `True`
+        `False`
         ## 返回值/Return
         - 用户当个视频数据的列表，列表内包含JSON数据。
         - List of user single video data, list contains JSON data.
@@ -235,49 +239,23 @@ async def hybrid_parsing(url: str):
     start_time = time.time()
     # 获取数据
     data = api.hybrid_parsing(url)
-    # 更新数据
-    result = {
-        'url': url,
-        "endpoint": "/api/",
-        "total_time": float(format(time.time() - start_time, '.4f')),
-    }
-    # 合并数据
-    result.update(data)
+    # 是否精简
+    if minimal:
+        result = api.hybrid_parsing_minimal(data)
+    else:
+        # 更新数据
+        result = {
+            'url': url,
+            "endpoint": "/api/",
+            "total_time": float(format(time.time() - start_time, '.4f')),
+        }
+        # 合并数据
+        result.update(data)
     # 记录API调用
     await api_logs(start_time=start_time,
                    input_data={'url': url},
                    endpoint='api')
     return ORJSONResponse(result)
-
-
-@app.get("/api/minimal", tags=["API"], response_model=API_Hybrid_Minimal_Response)
-async def hybrid_parsing_minimal(url: str):
-    """
-        ## 用途/Usage
-        - 获取[抖音|TikTok]单个视频数据(精简版-用于给快捷指令使用)，参数是视频链接或分享口令。
-        - Get [Douyin|TikTok] single video data (simplified version - for use with shortcut actions), the parameter is the video link or share code.
-        ## 参数/Parameter
-        #### url(必填/Required)):
-        - 视频链接。| 分享口令
-        - The video link.| Share code
-        - 例子/Example:
-        `https://www.douyin.com/video/7153585499477757192`
-        `https://v.douyin.com/MkmSwy7/`
-        `https://vm.tiktok.com/TTPdkQvKjP/`
-        `https://www.tiktok.com/@tvamii/video/7045537727743380782`
-        ## 返回值/Return
-        - 用户当个视频数据的列表，列表内包含JSON数据。
-        - List of user single video data, list contains JSON data.
-    """
-    print("正在进行最小化混合解析...")
-    # 开始时间
-    start_time = time.time()
-    data = api.hybrid_parsing_minimal(video_url=url)
-    # 记录API调用
-    await api_logs(start_time=start_time,
-                   input_data={'url': url},
-                   endpoint='api/minimal')
-    return ORJSONResponse(data)
 
 
 """ ________________________⬇️抖音视频解析端点(Douyin video parsing endpoint)⬇________________________"""
@@ -324,8 +302,15 @@ async def get_douyin_video_data(douyin_video_url: str = None, video_id: str = No
         start_time = time.time()
         print('获取到的video_id数据:{}'.format(video_id))
         if video_id is not None:
-            video_id = video_id
             video_data = api.get_douyin_video_data(video_id=video_id)
+            if video_data is None:
+                result = {
+                    "status": "failed",
+                    "platform": "douyin",
+                    "endpoint": "/douyin_video_data/",
+                    "message": "视频API数据获取失败/Failed to get video API data",
+                }
+                return ORJSONResponse(result)
             # print('获取到的video_data:{}'.format(video_data))
             # 记录API调用
             await api_logs(start_time=start_time,
@@ -395,6 +380,17 @@ async def get_tiktok_video_data(tiktok_video_url: str = None, video_id: str = No
     if video_id is not None and video_id != '':
         print('开始解析单个TikTok视频数据')
         video_data = api.get_tiktok_video_data(video_id)
+        # TikTok的API数据如果为空或者返回的数据中没有视频数据，就返回错误信息
+        # If the TikTok API data is empty or there is no video data in the returned data, an error message is returned
+        if video_data is None or video_data.get('aweme_id') != video_id:
+            print('视频数据获取失败/Failed to get video data')
+            result = {
+                "status": "failed",
+                "platform": "tiktok",
+                "endpoint": "/tiktok_video_data/",
+                "message": "视频数据获取失败/Failed to get video data"
+            }
+            return ORJSONResponse(result)
         # 记录API调用
         await api_logs(start_time=start_time,
                        input_data={'tiktok_video_url': tiktok_video_url, 'video_id': video_id},
@@ -417,9 +413,7 @@ async def get_tiktok_video_data(tiktok_video_url: str = None, video_id: str = No
             "status": "failed",
             "platform": "tiktok",
             "endpoint": "/tiktok_video_data/",
-            "message": "视频链接错误/Video link error",
-            "total_time": 0,
-            "aweme_list": []
+            "message": "视频链接错误/Video link error"
         }
         return ORJSONResponse(result)
 
@@ -444,9 +438,10 @@ async def Get_Shortcut():
 
 
 @app.get("/download", tags=["Download"])
-async def download_file(url: str):
-    pass
-
+async def download_file(url: str = None):
+    # file_path = "https://v3-dy-o.zjcdn.com/f78ba3f14461ca85d70917682e7e3adc/6365cb5c/video/tos/cn/tos-cn-ve-15/695a4fb1d06943d1a79b8d31c5c2c097/?a=1128&ch=0&cr=0&dr=0&lr=aweme_search_suffix&cd=0%7C0%7C1%7C0&cv=1&br=2060&bt=2060&cs=0&ds=3&ft=f84k7SY0-C1FQvjVQQMYW07us3dVqSnaglvAV&mime_type=video_mp4&qs=0&rc=M2YzOzU5OTc7NGk4NzZkNkBpM3hleDRsODlkMzMzaGkzM0AuNGMuYy1eXi8xYTVgMzQ2YSMuLjJucGtuNi5gLS1jLTBzcw%3D%3D&l=202211050932500102121971454F33841F&btag=80000&cc=1f"
+    file_path = 'test.mp4'
+    return FileResponse(path=file_path, media_type='mp4', filename="test.mp4")
 
 if __name__ == '__main__':
     uvicorn.run("web_api:app", port=port, reload=True, access_log=False)
