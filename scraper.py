@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 # @Author: https://github.com/Evil0ctal/
 # @Time: 2021/11/06
-# @Update: 2022/11/04
+# @Update: 2022/11/05
 # @Version: 3.0.0
 # @Function:
 # 核心代码，估值1块(๑•̀ㅂ•́)و✧
@@ -473,10 +473,10 @@ class Scraper:
         if data['status'] == 'success':
             result = {
                 'status': 'success',
-                'message': data['message'],
-                'platform': data['platform'],
-                'type': data['type'],
-                'desc': data['desc'],
+                'message': data.get('message'),
+                'platform': data.get('platform'),
+                'type': data.get('type'),
+                'desc': data.get('desc'),
                 'wm_video_url': data['video_data']['wm_video_url'] if data['type'] == 'video' else None,
                 'wm_video_url_HQ': data['video_data']['wm_video_url_HQ'] if data['type'] == 'video' else None,
                 'nwm_video_url': data['video_data']['nwm_video_url'] if data['type'] == 'video' else None,
