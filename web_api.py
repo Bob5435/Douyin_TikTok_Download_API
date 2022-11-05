@@ -98,7 +98,7 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-""" ________________________⬇️端点响应模型(Endpoints Response Model)⬇________________________"""
+""" ________________________⬇️端点响应模型(Endpoints Response Model)⬇️________________________"""
 
 
 # API Root节点
@@ -167,7 +167,7 @@ class API_Hybrid_Minimal_Response(BaseModel):
     watermark_image_list: list or None = None
 
 
-""" ________________________⬇️端点日志记录(Endpoint logs)⬇________________________"""
+""" ________________________⬇️端点日志记录(Endpoint logs)⬇️________________________"""
 
 
 # 记录API请求日志
@@ -188,7 +188,7 @@ async def api_logs(start_time, input_data, endpoint, error_data: dict = None):
     return 1
 
 
-""" ________________________⬇️Root端点(Root endpoint)⬇________________________"""
+""" ________________________⬇️Root端点(Root endpoint)⬇️________________________"""
 
 
 # Root端点
@@ -208,7 +208,7 @@ async def root():
     return ORJSONResponse(data)
 
 
-""" ________________________⬇️混合解析端点(Hybrid parsing endpoints)⬇________________________"""
+""" ________________________⬇️混合解析端点(Hybrid parsing endpoints)⬇️________________________"""
 
 
 # 混合解析端点,自动判断输入链接返回精简后的数据
@@ -262,7 +262,7 @@ async def hybrid_parsing(url: str, minimal: bool = False):
     return ORJSONResponse(result)
 
 
-""" ________________________⬇️抖音视频解析端点(Douyin video parsing endpoint)⬇________________________"""
+""" ________________________⬇️抖音视频解析端点(Douyin video parsing endpoint)⬇️________________________"""
 
 
 # 获取抖音单个视频数据/Get Douyin single video data
@@ -345,7 +345,7 @@ async def get_douyin_video_data(douyin_video_url: str = None, video_id: str = No
             return ORJSONResponse(result)
 
 
-""" ________________________⬇️TikTok视频解析端点(TikTok video parsing endpoint)⬇________________________"""
+""" ________________________⬇️TikTok视频解析端点(TikTok video parsing endpoint)⬇️________________________"""
 
 
 # 获取TikTok单个视频数据/Get TikTok single video data
@@ -422,7 +422,7 @@ async def get_tiktok_video_data(tiktok_video_url: str = None, video_id: str = No
         return ORJSONResponse(result)
 
 
-""" ________________________⬇️iOS快捷指令更新端点(iOS Shortcut update endpoint)⬇________________________"""
+""" ________________________⬇️iOS快捷指令更新端点(iOS Shortcut update endpoint)⬇️________________________"""
 
 
 @app.get("/ios", response_model=iOS_Shortcut, tags=["iOS_Shortcut"])
@@ -438,7 +438,7 @@ async def Get_Shortcut():
     return ORJSONResponse(data)
 
 
-""" ________________________⬇️下载文件端点(Download file endpoint)⬇________________________"""
+""" ________________________⬇️下载文件端点(Download file endpoint)⬇️________________________"""
 
 
 # 下载文件端点/Download file endpoint
