@@ -447,7 +447,7 @@ async def Get_Shortcut():
 
 # 下载文件端点/Download file endpoint
 @app.get("/download", tags=["Download"])
-async def download_file_hybrid(url: str, url_format: str = 'string' or 'json', prefix: bool = True):
+async def download_file_hybrid(url: str, prefix: bool = True):
     """
         ## 用途/Usage
         ### [中文]
