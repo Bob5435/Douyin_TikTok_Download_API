@@ -24,6 +24,7 @@ from fastapi.responses import ORJSONResponse, FileResponse
 from pydantic import BaseModel
 from starlette.responses import RedirectResponse
 
+
 from scraper import Scraper
 
 # 读取配置文件
@@ -446,7 +447,7 @@ async def Get_Shortcut():
 
 # 下载文件端点/Download file endpoint
 @app.get("/download", tags=["Download"])
-async def download_file_hybrid(url: str, prefix: bool = True):
+async def download_file_hybrid(url: str, url_format: str = 'string' or 'json', prefix: bool = True):
     """
         ## 用途/Usage
         ### [中文]
@@ -524,6 +525,14 @@ async def download_file_hybrid(url: str, prefix: bool = True):
                     return FileResponse(path=zip_file_path, media_type='zip', filename=zip_file_name)
         else:
             return ORJSONResponse(data)
+
+
+# 批量下载文件端点/Batch download file endpoint
+@app.get("/batch_download", tags=["Download"])
+async def batch_download_file(url_list: str, prefix: bool = True):
+    print('url_list: ', url_list)
+    return ORJSONResponse({"status": "ε＝ε＝ε＝(#>д<)ﾉ",
+                           "message": "真不错"})
 
 
 # 抖音链接格式下载端点(video)/Douyin link format download endpoint(video)
@@ -638,4 +647,7 @@ async def startup_event():
 
 
 if __name__ == '__main__':
+    # 建议使用gunicorn启动，使用uvicorn启动时请将debug设置为False
+    # It is recommended to use gunicorn to start, when using uvicorn to start, please set debug to False
+    # uvicorn web_api:app --host '0.0.0.0' --port 8000 --reload
     uvicorn.run("web_api:app", port=port, reload=True, access_log=False)
