@@ -326,7 +326,7 @@ def main():
             # 向网页输出表格/Put table on web page
             with use_scope(str(url_index)):
                 # 显示进度
-                put_info(t(f'正在解析第{url_index}个链接', f'Parsing the {url_index}th link'))
+                put_info(t(f'正在解析第{url_index}个链接: {url}', f'Parsing the {url_index}th link: {url}'))
                 put_table(table_list)
                 put_html('<hr>')
             scroll_to(str(url_index))
@@ -372,6 +372,8 @@ def main():
         time_consuming = round(end - start, 2)
         # 显示耗时
         put_markdown(f"**{t('耗时', 'Time consuming')}:** {time_consuming}s")
+        # 放置一个按钮，点击后跳转到顶部
+        put_button(t('回到顶部', 'Back to top'), onclick=lambda: scroll_to('1'), color='success', outline=True)
         # 返回主页链接
         put_link(t('再来一波 (つ´ω`)つ', 'Another wave (つ´ω`)つ'), '/')
 
