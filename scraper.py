@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 # @Author: https://github.com/Evil0ctal/
 # @Time: 2021/11/06
-# @Update: 2022/11/05
+# @Update: 2022/11/06
 # @Version: 3.0.0
 # @Function:
 # 核心代码，估值1块(๑•̀ㅂ•́)و✧
@@ -59,14 +59,6 @@ class Scraper:
         }
         self.douyin_cookies = {
             'Cookie': 'msToken=tsQyL2_m4XgtIij2GZfyu8XNXBfTGELdreF1jeIJTyktxMqf5MMIna8m1bv7zYz4pGLinNP2TvISbrzvFubLR8khwmAVLfImoWo3Ecnl_956MgOK9kOBdwM=; odin_tt=6db0a7d68fd2147ddaf4db0b911551e472d698d7b84a64a24cf07c49bdc5594b2fb7a42fd125332977218dd517a36ec3c658f84cebc6f806032eff34b36909607d5452f0f9d898810c369cd75fd5fb15; ttwid=1%7CfhiqLOzu_UksmD8_muF_TNvFyV909d0cw8CSRsmnbr0%7C1662368529%7C048a4e969ec3570e84a5faa3518aa7e16332cfc7fbcb789780135d33a34d94d2'
-        }
-        self.tiktok_headers = {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "authority": "www.tiktok.com",
-            "Accept-Encoding": "gzip, deflate",
-            "Connection": "keep-alive",
-            "Host": "www.tiktok.com",
-            "User-Agent": "Mozilla/5.0  (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) coc_coc_browser/86.0.170 Chrome/80.0.3987.170 Safari/537.36",
         }
         self.tiktok_api_headers = {
             'User-Agent': 'com.ss.android.ugc.trill/2613 (Linux; U; Android 10; en_US; Pixel 4; Build/QQ3A.200805.001; Cronet/58.0.2991.0)'
@@ -169,7 +161,7 @@ class Scraper:
             else:
                 print('正在通过TikTok分享链接获取原始链接...')
                 try:
-                    response = requests.get(url, headers=self.tiktok_headers, allow_redirects=False,
+                    response = requests.get(url, headers=self.headers, allow_redirects=False,
                                             proxies=self.proxies)
                     if response.status_code == 301:
                         # 视频链接302重定向'Location'字段
