@@ -462,6 +462,7 @@ async def download_file_hybrid(url: str, prefix: bool = True, watermark: bool = 
         # 参数/Parameter
         - url:str -> [Douyin|TikTok] [视频|图片] 链接/ [Douyin|TikTok] [video|image] link
         - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+        - watermark: bool -> [True/False] 是否添加水印/Whether to add a watermark
         """
     # 是否开启此端点/Whether to enable this endpoint
     if config["Web_API"]["Download_Switch"] != "True":
@@ -546,6 +547,10 @@ async def download_file_hybrid(url: str, prefix: bool = True, watermark: bool = 
 # 批量下载文件端点/Batch download file endpoint
 @app.get("/batch_download", tags=["Download"])
 async def batch_download_file(url_list: str, prefix: bool = True):
+    """
+    批量下载文件端点/Batch download file endpoint
+    未完工/Unfinished
+    """
     print('url_list: ', url_list)
     return ORJSONResponse({"status": "failed",
                            "message": "嘿嘿嘿，这个功能还没做呢，等我有空再做吧/Hehehe, this function hasn't been done yet, I'll do it when I have time"})
@@ -565,6 +570,7 @@ async def download_douyin_video(aweme_id: str, prefix: bool = True, watermark: b
     # 参数/Parameter
     - aweme_id:str -> 抖音视频ID/Douyin video ID
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    - watermark: bool -> [True/False] 是否添加水印/Whether to add a watermark
     """
     # 是否开启此端点/Whether to enable this endpoint
     if config["Web_API"]["Download_Switch"] != "True":
@@ -589,6 +595,7 @@ async def download_douyin_video(aweme_id: str, prefix: bool = True, watermark: b
     # 参数/Parameter
     - aweme_id:str -> 抖音视频ID/Douyin video ID
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    - watermark: bool -> [True/False] 是否添加水印/Whether to add a watermark
     """
     # 是否开启此端点/Whether to enable this endpoint
     if config["Web_API"]["Download_Switch"] != "True":
@@ -613,6 +620,7 @@ async def download_douyin_discover(modal_id: str, prefix: bool = True, watermark
     # 参数/Parameter
     - modal_id: str -> 抖音视频ID/Douyin video ID
     - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    - watermark: bool -> [True/False] 是否添加水印/Whether to add a watermark
     """
     # 是否开启此端点/Whether to enable this endpoint
     if config["Web_API"]["Download_Switch"] != "True":
@@ -638,6 +646,7 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
         - user_id: str -> TikTok用户ID/TikTok user ID
         - aweme_id: str -> TikTok视频ID/TikTok video ID
         - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+        - watermark: bool -> [True/False] 是否添加水印/Whether to add a watermark
         """
     # 是否开启此端点/Whether to enable this endpoint
     if config["Web_API"]["Download_Switch"] != "True":
