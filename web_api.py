@@ -175,20 +175,26 @@ class API_Hybrid_Minimal_Response(BaseModel):
 
 # 记录API请求日志
 async def api_logs(start_time, input_data, endpoint, error_data: dict = None):
-    time_now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    total_time = float(format(time.time() - start_time, '.4f'))
-    file_name = "API_logs.json"
-    # 写入日志内容
-    with open(file_name, "a", encoding="utf-8") as f:
-        data = {
-            "time": time_now,
-            "endpoint": f'/{endpoint}/',
-            "total_time": total_time,
-            "input_data": input_data,
-            "error_data": error_data if error_data else "No error"
-        }
-        f.write(json.dumps(data, ensure_ascii=False) + ",\n")
-    return 1
+    if config["Web_API"]["Allow_Logs"] == "True":
+        time_now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        total_time = float(format(time.time() - start_time, '.4f'))
+        file_name = "API_logs.json"
+        # 写入日志内容
+        with open(file_name, "a", encoding="utf-8") as f:
+            data = {
+                "time": time_now,
+                "endpoint": f'/{endpoint}/',
+                "total_time": total_time,
+                "input_data": input_data,
+                "error_data": error_data if error_data else "No error"
+            }
+            f.write(json.dumps(data, ensure_ascii=False) + ",\n")
+        print('日志记录成功！')
+        return 1
+    else:
+        print('日志记录已关闭！')
+        return 0
+
 
 
 """ ________________________⬇️Root端点(Root endpoint)⬇️________________________"""
@@ -461,6 +467,8 @@ async def download_file_hybrid(url: str, prefix: bool = True, watermark: bool = 
     if config["Web_API"]["Download_Switch"] != "True":
         return ORJSONResponse({"status": "endpoint closed",
                                "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
+    # 开始时间
+    start_time = time.time()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -468,6 +476,10 @@ async def download_file_hybrid(url: str, prefix: bool = True, watermark: bool = 
     if data is None:
         return ORJSONResponse(data)
     else:
+        # 记录API调用
+        await api_logs(start_time=start_time,
+                       input_data={'url': url},
+                       endpoint='download')
         url_type = data.get('type')
         platform = data.get('platform')
         aweme_id = data.get('aweme_id')
