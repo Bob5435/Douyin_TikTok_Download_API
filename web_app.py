@@ -6,7 +6,6 @@
 # @Function:
 # 用于在线批量解析Douyin/TikTok的无水印视频/图集。
 # 基于 PyWebIO，将scraper.py返回的内容显示在网页上。
-# 默认运行端口5000, 请自行在config.ini中修改。
 
 import configparser
 import os
