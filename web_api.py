@@ -7,7 +7,6 @@
 # @Function:
 # 创建一个接受提交参数的Flask应用程序。
 # 将scraper.py返回的内容以JSON格式返回。
-# 默认运行端口2333, 请自行在config.ini中修改。
 
 
 import configparser
