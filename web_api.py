@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 # @Author: https://github.com/Evil0ctal/
 # @Time: 2021/11/06
-# @Update: 2022/11/05
+# @Update: 2022/11/06
 # @Version: 3.0.0
 # @Function:
 # 创建一个接受提交参数的Flask应用程序。
@@ -447,7 +447,7 @@ async def Get_Shortcut():
 
 # 下载文件端点/Download file endpoint
 @app.get("/download", tags=["Download"])
-async def download_file_hybrid(url: str, prefix: bool = True):
+async def download_file_hybrid(url: str, prefix: bool = True, watermark: bool = False):
     """
         ## 用途/Usage
         ### [中文]
@@ -478,8 +478,8 @@ async def download_file_hybrid(url: str, prefix: bool = True):
         if not os.path.exists(root_path):
             os.makedirs(root_path)
         if url_type == 'video':
-            file_name = file_name_prefix + platform + '_' + aweme_id + '.mp4'
-            url = data.get('video_data').get('nwm_video_url_HQ')
+            file_name = file_name_prefix + platform + '_' + aweme_id + '.mp4' if not watermark else file_name_prefix + platform + '_' + aweme_id + '_watermark' + '.mp4'
+            url = data.get('video_data').get('nwm_video_url_HQ') if not watermark else data.get('video_data').get('wm_video_url')
             print('url: ', url)
             file_path = root_path + "/" + file_name
             print('file_path: ', file_path)
@@ -498,27 +498,32 @@ async def download_file_hybrid(url: str, prefix: bool = True):
                     f.write(r)
                 return FileResponse(path=file_path, media_type='video/mp4', filename=file_name)
         elif url_type == 'image':
-            url = data.get('image_data').get('no_watermark_image_list')
+            url = data.get('image_data').get('no_watermark_image_list') if not watermark else data.get('image_data').get('watermark_image_list')
             print('url: ', url)
-            zip_file_name = file_name_prefix + platform + '_' + aweme_id + '_images.zip'
-            zip_file_path = root_path + "/" + file_name_prefix + platform + '_' + aweme_id + '_images.zip'
+            zip_file_name = file_name_prefix + platform + '_' + aweme_id + '_images.zip' if not watermark else file_name_prefix + platform + '_' + aweme_id + '_images_watermark.zip'
+            zip_file_path = root_path + "/" + zip_file_name
             print('zip_file_name: ', zip_file_name)
+            print('zip_file_path: ', zip_file_path)
             # 判断文件是否存在，存在就直接返回、
-            if os.path.exists(zip_file_name):
+            if os.path.exists(zip_file_path):
                 print('文件已存在，直接返回')
                 return FileResponse(path=zip_file_path, media_type='zip', filename=zip_file_name)
             file_path_list = []
             for i in url:
+                r = requests.get(url=i, headers=headers)
+                content_type = r.headers.get('content-type')
+                file_format = content_type.split('/')[1]
+                r = r.content
                 index = int(url.index(i))
-                file_name = file_name_prefix + platform + '_' + aweme_id + '_' + str(index + 1) + '.jpg'
+                file_name = file_name_prefix + platform + '_' + aweme_id + '_' + str(index + 1) + '.' + file_format if not watermark else \
+                    file_name_prefix + platform + '_' + aweme_id + '_' + str(index + 1) + '_watermark' + '.' + file_format
                 file_path = root_path + "/" + file_name
                 file_path_list.append(file_path)
-                r = requests.get(url=i, headers=headers).content
                 print('file_path: ', file_path)
                 with open(file_path, 'wb') as f:
                     f.write(r)
                 if len(url) == len(file_path_list):
-                    zip_file = zipfile.ZipFile(zip_file_name, 'w')
+                    zip_file = zipfile.ZipFile(zip_file_path, 'w')
                     for f in file_path_list:
                         zip_file.write(os.path.join(f), f, zipfile.ZIP_DEFLATED)
                     zip_file.close()
@@ -531,13 +536,13 @@ async def download_file_hybrid(url: str, prefix: bool = True):
 @app.get("/batch_download", tags=["Download"])
 async def batch_download_file(url_list: str, prefix: bool = True):
     print('url_list: ', url_list)
-    return ORJSONResponse({"status": "ε＝ε＝ε＝(#>д<)ﾉ",
-                           "message": "真不错"})
+    return ORJSONResponse({"status": "failed",
+                           "message": "嘿嘿嘿，这个功能还没做呢，等我有空再做吧/Hehehe, this function hasn't been done yet, I'll do it when I have time"})
 
 
 # 抖音链接格式下载端点(video)/Douyin link format download endpoint(video)
 @app.get("/video/{aweme_id}", tags=["Download"])
-async def download_douyin_video(aweme_id: str, prefix: bool = True):
+async def download_douyin_video(aweme_id: str, prefix: bool = True, watermark: bool = False):
     """
     ## 用途/Usage
     ### [中文]
@@ -555,13 +560,37 @@ async def download_douyin_video(aweme_id: str, prefix: bool = True):
         return ORJSONResponse({"status": "endpoint closed",
                                "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.douyin.com/video/{aweme_id}"
-    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}&watermark={watermark}"
+    return RedirectResponse(download_url)
+
+
+# 抖音链接格式下载端点(video)/Douyin link format download endpoint(video)
+@app.get("/note/{aweme_id}", tags=["Download"])
+async def download_douyin_video(aweme_id: str, prefix: bool = True, watermark: bool = False):
+    """
+    ## 用途/Usage
+    ### [中文]
+    - 将抖音域名改为当前服务器域名即可调用此端点，返回[视频|图片]文件下载请求。
+    - 例如原链接：https://douyin.com/video/1234567890123456789 改成 https://api.douyin.wtf/video/1234567890123456789 即可调用此端点。
+    ### [English]
+    - Change the Douyin domain name to the current server domain name to call this endpoint and return the video file download request.
+    - For example, the original link: https://douyin.com/video/1234567890123456789 becomes https://api.douyin.wtf/video/1234567890123456789 to call this endpoint.
+    # 参数/Parameter
+    - aweme_id:str -> 抖音视频ID/Douyin video ID
+    - prefix: bool -> [True/False] 是否添加前缀/Whether to add a prefix
+    """
+    # 是否开启此端点/Whether to enable this endpoint
+    if config["Web_API"]["Download_Switch"] != "True":
+        return ORJSONResponse({"status": "endpoint closed",
+                               "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
+    video_url = f"https://www.douyin.com/video/{aweme_id}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}&watermark={watermark}"
     return RedirectResponse(download_url)
 
 
 # 抖音链接格式下载端点/Douyin link format download endpoint
 @app.get("/discover", tags=["Download"])
-async def download_douyin_discover(modal_id: str, prefix: bool = True):
+async def download_douyin_discover(modal_id: str, prefix: bool = True, watermark: bool = False):
     """
     ## 用途/Usage
     ### [中文]
@@ -579,13 +608,13 @@ async def download_douyin_discover(modal_id: str, prefix: bool = True):
         return ORJSONResponse({"status": "endpoint closed",
                                "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.douyin.com/discover?modal_id={modal_id}"
-    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}&watermark={watermark}"
     return RedirectResponse(download_url)
 
 
 # Tiktok链接格式下载端点(video)/Tiktok link format download endpoint(video)
 @app.get("/{user_id}/video/{aweme_id}", tags=["Download"])
-async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True):
+async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True, watermark: bool = False):
     """
         ## 用途/Usage
         ### [中文]
@@ -604,7 +633,7 @@ async def download_tiktok_video(user_id: str, aweme_id: str, prefix: bool = True
         return ORJSONResponse({"status": "endpoint closed",
                                "message": "此端点已关闭请在配置文件中开启/This endpoint is closed, please enable it in the configuration file"})
     video_url = f"https://www.tiktok.com/{user_id}/video/{aweme_id}"
-    download_url = f"{domain}/download?url={video_url}&prefix={prefix}"
+    download_url = f"{domain}/download?url={video_url}&prefix={prefix}&watermark={watermark}"
     return RedirectResponse(download_url)
 
 
