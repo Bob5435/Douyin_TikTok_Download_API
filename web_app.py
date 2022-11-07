@@ -31,16 +31,6 @@ def t(zh: str, en: str) -> str:
     return zh if 'zh' in session_info.user_language else en
 
 
-# 网站标题/Website title
-title = t(config['Web_APP']['Web_Title'], config['Web_APP']['Web_Title_English'])
-
-# 网站描述/Website description
-description = t(config['Web_APP']['Web_Description'], config['Web_APP']['Web_Description_English'])
-
-# 网站设置/Website settings
-web_config = pywebio_config(title=title, description=description)
-
-
 # 解析抖音分享口令中的链接并返回列表/Parse the link in the Douyin share command and return a list
 def find_url(string: str) -> list:
     url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
@@ -209,7 +199,17 @@ def about_popup_window():
         put_html('<hr>')
 
 
+# 网站标题/Website title
+title = config['Web_APP']['Web_Title']
+
+# 网站描述/Website description
+description = config['Web_APP']['Web_Description']
+
+
+# 网站设置/Website settings
+# web_config = pywebio_config(title=title, description=description)
 # 程序入口/Main interface
+@pywebio_config(title=title, description=description, theme='minty')
 def main():
     # 关键字信息
     keywords = config['Web_APP']['Keywords']
@@ -226,8 +226,8 @@ def main():
         """.format(keywords))
     # 修改footer
     session.run_js("""$('footer').remove()""")
-    # 访问记录
-    # view_amount = requests.get("https://views.whatilearened.today/views/github/evil0ctal/TikTokDownload_PyWebIO.svg")
+    # 网站标题/Website title
+    title = t(config['Web_APP']['Web_Title'], config['Web_APP']['Web_Title_English'])
     put_markdown("""<div align='center' ><font size='20'>😼{}</font></div>""".format(title))
     put_html('<hr>')
     put_row(
@@ -385,5 +385,5 @@ if __name__ == '__main__':
         port = int(config['Web_APP']['Port'])
     # 判断是否使用CDN加载前端资源
     cdn = True if config['Web_APP']['PyWebIO_CDN'] == 'True' else False
-    # 启动Web服务
+    # 启动Web服务\Start Web service
     start_server(main, port=port, debug=False, cdn=cdn)
