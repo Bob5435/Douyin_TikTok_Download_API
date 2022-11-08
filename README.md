@@ -364,14 +364,13 @@ docker compose pull && docker compose down && docker compose up -d
 
 </details>
 
-## 📜 许可证
+## 📜 脚注
 
-MIT License
-
----
-
-## 脚注🔚
+[MIT License]("https://github.com/Evil0ctal/Douyin_TikTok_Download_API/blob/Stable/LICENSE")
 
 > Start: 2021/11/06
->  GitHub [@Evil0ctal](https://github.com/Evil0ctal)
+> GitHub [@Evil0ctal](https://github.com/Evil0ctal)
 > Email Evil0ctal1985@gmail.com
+
+
+
